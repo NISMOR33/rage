@@ -4,6 +4,11 @@ using System.Text.Json;
 
 internal static class Program
 {
+    private static readonly JsonSerializerOptions InputJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     [DllImport("user32.dll")]
     private static extern bool SetCursorPos(int x, int y);
 
@@ -29,10 +34,14 @@ internal static class Program
             if (!await ReadExact(input, payload)) break;
 
             Response response;
+            long requestId = 0;
             try
             {
-                Request? request = JsonSerializer.Deserialize<Request>(payload);
-                if (request is null || request.Type != "click")
+                Request? request = JsonSerializer.Deserialize<Request>(payload, InputJsonOptions);
+                if (request is null)
+                    throw new InvalidOperationException("Commande inconnue.");
+                requestId = request.Id;
+                if (request.Type != "click")
                     throw new InvalidOperationException("Commande inconnue.");
                 if (!SetCursorPos(request.X, request.Y))
                     throw new InvalidOperationException("SetCursorPos a echoue.");
@@ -48,7 +57,7 @@ internal static class Program
             }
             catch (Exception error)
             {
-                response = new Response(0, false, error.Message);
+                response = new Response(requestId, false, error.Message);
             }
             await WriteMessage(output, response);
         }

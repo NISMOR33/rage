@@ -33,11 +33,19 @@ function getMouseHost() {
 function sendWindowsClick(x, y) {
   return new Promise((resolve, reject) => {
     const id = ++mouseRequestId;
-    mouseRequests.set(id, { resolve, reject });
+    const timeout = setTimeout(() => {
+      mouseRequests.delete(id);
+      reject(new Error("Le compagnon Windows ne repond pas (delai de 2 s)."));
+    }, 2000);
+    mouseRequests.set(id, {
+      resolve: value => { clearTimeout(timeout); resolve(value); },
+      reject: error => { clearTimeout(timeout); reject(error); }
+    });
     try {
       getMouseHost().postMessage({ id, type: "click", x: Math.round(x), y: Math.round(y) });
     } catch (error) {
       mouseRequests.delete(id);
+      clearTimeout(timeout);
       reject(error);
     }
   });

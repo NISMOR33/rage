@@ -1,5 +1,16 @@
 # Vision Hold Clicker
 
+Version actuelle : **4.1.0**.
+
+Deux robots sont inclus :
+
+- **Reaction** : attend l'apparition de la cible, respecte le minimum de 100 ms et utilise le clic Windows natif.
+- **Gridshot** : repere chaque cellule, deplace physiquement le curseur au centre du tapis et clique avec Windows.
+
+### Correction 4.1.0
+
+La version 4.0 pouvait rester sur `TOUCHE MAINTENUE` avec zero detection : le compagnon C# lisait les proprietes JSON avec une casse differente de JavaScript, puis repondait avec l'identifiant `0`. La 4.1 accepte les noms JSON sans tenir compte de la casse, conserve l'identifiant de chaque demande et affiche une erreur apres deux secondes au lieu de rester bloquee.
+
 ## Installation du compagnon Windows (curseur reel)
 
 Gridshot utilise `native-host/VisionMouseHost`, qui deplace physiquement la souris avec `SetCursorPos` et clique avec `SendInput`.
