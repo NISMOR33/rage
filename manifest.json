@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Vision Hold Clicker",
+  "version": "4.0.0",
+  "description": "Détecte les changements de la page web et clique tant que la touche configurée est maintenue.",
+  "permissions": ["storage", "tabs", "activeTab", "scripting", "debugger", "nativeMessaging"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Vision Hold Clicker"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}

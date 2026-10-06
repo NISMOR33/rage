@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vision Hold Clicker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><div class="logo">◎</div><div><h1>Vision Clicker</h1><p>Mode Réaction Aim Scientist · direct</p></div></header>
+    <section class="status-card"><span id="statusDot"></span><div><small>STATUT</small><strong id="status">INACTIF</strong></div></section>
+    <section class="stats">
+      <div><strong id="detections">0</strong><span>Détections</span></div>
+      <div><strong id="clicks">0</strong><span>Clics</span></div>
+      <div><strong id="lastDelay">—</strong><span>Dernier délai</span></div>
+    </section>
+    <section class="latency-card">
+      <div><span>Délai demandé</span><strong id="requestedDelay">—</strong></div>
+      <div><span>Délai réel</span><strong id="measuredDelay">—</strong></div>
+      <div><span>Surcharge Chrome</span><strong id="browserOverhead">—</strong></div>
+    </section>
+    <section class="panel">
+      <label>Touche d’activation</label>
+      <button id="keyButton" class="key">F</button>
+      <p id="keyHint" class="hint">Cliquez pour choisir une autre touche.</p>
+      <label for="activationMode">Mode d’activation</label>
+      <select id="activationMode">
+        <option value="hold">Maintenir la touche</option>
+        <option value="toggle">Un appui active / un appui désactive</option>
+      </select>
+      <button id="toggleButton" class="secondary">Démarrer maintenant</button>
+      <div class="grid">
+        <label>Délai minimum<input id="minDelay" type="number" min="0" max="10000"><em>ms</em></label>
+        <label>Délai maximum<input id="maxDelay" type="number" min="0" max="10000"><em>ms</em></label>
+      </div>
+      <label>Partie de la page surveillée</label>
+      <select id="searchMode"><option value="full">Toute la page (recommandé)</option><option value="custom">Zone personnalisée</option></select>
+      <button id="selectRegion" class="secondary">Sélectionner la zone sur la page</button>
+      <div class="range-head"><label for="sensitivity">Sensibilité au changement</label><output id="sensitivityValue">88 %</output></div>
+      <input id="sensitivity" type="range" min="60" max="99" step="1">
+      <label for="secondClickEnabled">Second clic après détection</label>
+      <select id="secondClickEnabled">
+        <option value="false">Désactivé (1 seul clic)</option>
+        <option value="true">Activé (2ème clic après délai)</option>
+      </select>
+      <div id="secondClickGroup" style="display:none; margin-top: 6px;">
+        <div class="grid">
+          <label>Délai 2nd clic<input id="secondClickDelay" type="number" min="0" max="10000"><em>ms</em></label>
+        </div>
+        <button id="selectClickPoint" class="secondary" style="margin-top:6px;">Placer le point du 2ème clic</button>
+        <p id="secondClickPointHint" class="hint" style="margin-top:4px; text-align:center;"></p>
+      </div>
+      <p id="error" class="error"></p>
+    </section>
+    <footer>Sur Aim Scientist : clic automatique activé pour tous les profils.</footer>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

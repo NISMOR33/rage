@@ -1,0 +1,5 @@
+.vs/
+native-host/bin/
+native-host/obj/
+native-host/publish/
+*.user
