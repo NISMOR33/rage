@@ -1,6 +1,16 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.9.0**.
+Version actuelle : **5.0.0**.
+
+## Mode d'envoi des scores
+
+Le fichier `background.js` contient l'option explicite suivante :
+
+```js
+const SEND_SCORE_DATA = false;
+```
+
+Avec `false`, les requetes `POST` vers le service de classement sont bloquees pendant le bot, tandis que les requetes `GET` restent autorisees pour consulter le classement. Ce mode doit rester actif pour tous les tests automatises.
 
 Deux robots sont inclus :
 

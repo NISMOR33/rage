@@ -9,6 +9,9 @@ const DEFAULTS = {
 const nativeClickQueues = new Map();
 const scoreBlockTabs = new Set();
 const SCORE_BLOCK_RULE_ID = 42001;
+// Mode bot local : mettre a true uniquement pour des parties humaines.
+// Les parties automatisees doivent conserver cette valeur a false.
+const SEND_SCORE_DATA = false;
 
 chrome.runtime.onStartup.addListener(() => {
   scoreBlockTabs.clear();
@@ -73,6 +76,7 @@ function sendWindowsBatch(points) {
 }
 
 async function enableScoreBlock(tabId) {
+  if (SEND_SCORE_DATA) return;
   if (scoreBlockTabs.has(tabId)) return;
   scoreBlockTabs.add(tabId);
   await chrome.declarativeNetRequest.updateDynamicRules({
@@ -91,6 +95,7 @@ async function enableScoreBlock(tabId) {
 }
 
 async function disableScoreBlock(tabId) {
+  if (SEND_SCORE_DATA) return;
   scoreBlockTabs.delete(tabId);
   if (scoreBlockTabs.size) return;
   await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [SCORE_BLOCK_RULE_ID] });
@@ -128,6 +133,7 @@ async function stopNativeClicking(tabId) {
 }
 
 chrome.runtime.onInstalled.addListener(async details => {
+  await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [SCORE_BLOCK_RULE_ID] });
   const saved = await chrome.storage.local.get(Object.keys(DEFAULTS));
   const migration = details.reason === "update" ? { searchMode: "full", searchRegion: null } : {};
   await chrome.storage.local.set({ ...DEFAULTS, ...saved, ...migration, status: "INACTIF", detections: 0, clicks: 0, lastDelay: null, requestedDelay: null, measuredDelay: null, browserOverhead: null, error: "" });
