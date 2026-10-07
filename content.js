@@ -184,38 +184,41 @@ function scanGridshotTargets() {
       }
     }
 
-    for (const target of document.querySelectorAll('[data-gridshot-target]')) {
-      if (target.hidden || target.disabled) {
-        gridshotPositions.delete(target);
-        continue;
-      }
-      const rect = target.getBoundingClientRect();
-      if (!isVisibleRect(rect)) {
-        gridshotPositions.delete(target);
-        continue;
+    gridshotBusy = true;
+    let batchHits = 0;
+    try {
+      for (const target of document.querySelectorAll('[data-gridshot-target]')) {
+        if (!isHeld()) break;
+        if (target.hidden || target.disabled) {
+          gridshotPositions.delete(target);
+          continue;
+        }
+        const rect = target.getBoundingClientRect();
+        if (!isVisibleRect(rect)) {
+          gridshotPositions.delete(target);
+          continue;
+        }
+
+        const position = `${target.dataset.cell || ""}:${target.style.left}:${target.style.top}`;
+        if (gridshotPositions.get(target) === position) continue;
+        gridshotPositions.set(target, position);
+
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        if (await dispatchGridshotClick(target, x, y, position)) batchHits++;
       }
 
-      // data-cell est la position logique du jeu. Contrairement au rectangle
-      // visuel, cette valeur ne bouge pas avec l'animation CSS du tapis.
-      const position = `${target.dataset.cell || ""}:${target.style.left}:${target.style.top}`;
-      if (gridshotPositions.get(target) === position) continue;
-      gridshotPositions.set(target, position);
-
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      gridshotBusy = true;
-      const accepted = await dispatchGridshotClick(target, x, y, position);
-      gridshotBusy = false;
-      if (accepted) {
+      if (batchHits) {
         const stats = await chrome.storage.local.get(["detections", "clicks"]);
         void chrome.storage.local.set({
-          status: "GRIDSHOT AUTO",
-          detections: (stats.detections || 0) + 1,
-          clicks: (stats.clicks || 0) + 1,
+          status: `GRIDSHOT TURBO x${batchHits}`,
+          detections: (stats.detections || 0) + batchHits,
+          clicks: (stats.clicks || 0) + batchHits,
           error: ""
         });
       }
-      break;
+    } finally {
+      gridshotBusy = false;
     }
   });
 }

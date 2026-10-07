@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.4.0**.
+Version actuelle : **4.5.0**.
 
 Deux robots sont inclus :
 
@@ -22,6 +22,10 @@ Les requetes `GET` du classement restent autorisees pendant le test : le panneau
 ### Optimisation 4.4.0
 
 La regle de protection reseau est maintenant installee une seule fois par session au lieu d'etre recalculee avant chaque clic. L'attente fixe apres `SendInput` est remplacee par une confirmation rapide du changement de cellule, avec un delai maximal de 30 ms.
+
+### Mode Turbo 4.5.0
+
+La boucle ne s'arrete plus apres le premier tapis. Les quatre cibles visibles sont traitees sequentiellement dans chaque lot, puis toutes les cibles deplacees sont reprises au cycle suivant. Les statistiques de l'extension ne sont ecrites qu'une fois par lot afin de ne pas ralentir les clics.
 
 ## Installation du compagnon Windows (curseur reel)
 
