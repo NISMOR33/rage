@@ -17,6 +17,7 @@ let gridshotScanQueued = false;
 let gridshotBusy = false;
 let gridshotModeSwitching = false;
 const gridshotPositions = new WeakMap();
+const gridshotSentAt = new WeakMap();
 let gridshotStartClicked = false;
 let gridshotTotalDetections = 0;
 let gridshotTotalClicks = 0;
@@ -199,17 +200,22 @@ function scanGridshotTargets() {
         if (!isHeld()) break;
         if (target.hidden || target.disabled) {
           gridshotPositions.delete(target);
+          gridshotSentAt.delete(target);
           continue;
         }
         const rect = target.getBoundingClientRect();
         if (!isVisibleRect(rect)) {
           gridshotPositions.delete(target);
+          gridshotSentAt.delete(target);
           continue;
         }
 
         const position = `${target.dataset.cell || ""}:${target.style.left}:${target.style.top}`;
-        if (gridshotPositions.get(target) === position) continue;
+        const samePosition = gridshotPositions.get(target) === position;
+        const sentAgo = performance.now() - (gridshotSentAt.get(target) || 0);
+        if (samePosition && sentAgo < 100) continue;
         gridshotPositions.set(target, position);
+        gridshotSentAt.set(target, performance.now());
 
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
@@ -250,7 +256,10 @@ async function dispatchGridshotBatch(batch) {
 
   const fpsMode = document.querySelector('[data-fps-mode]')?.value;
   if (fpsMode === "fps" || document.pointerLockElement) {
-    for (const { target } of batch) gridshotPositions.delete(target);
+    for (const { target } of batch) {
+      gridshotPositions.delete(target);
+      gridshotSentAt.delete(target);
+    }
     await chrome.storage.local.set({
       status: "PASSAGE EN CLASSIQUE",
       error: "Mode FPS encore actif : conversion automatique en cours."
@@ -261,10 +270,12 @@ async function dispatchGridshotBatch(batch) {
   try {
     const response = await sendNativeScreenBatch(batch.map(({ x, y }) => ({ x, y })));
     if (!response?.ok) throw new Error(response?.error || "Clic natif refuse");
-    for (const { target } of batch) gridshotPositions.delete(target);
     return batch.length;
   } catch (error) {
-    for (const { target } of batch) gridshotPositions.delete(target);
+    for (const { target } of batch) {
+      gridshotPositions.delete(target);
+      gridshotSentAt.delete(target);
+    }
     await chrome.storage.local.set({ status: "ERREUR GRIDSHOT", error: error.message });
     return 0;
   }

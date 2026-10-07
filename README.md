@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.8.0**.
+Version actuelle : **4.9.0**.
 
 Deux robots sont inclus :
 
@@ -38,6 +38,10 @@ Les quatre cibles Gridshot sont envoyees au compagnon Windows dans une seule com
 ### Boucle sans stockage 4.8.0
 
 Le journal 4.7 a montre des lots Windows de 3 a 11 ms mais des interruptions de 0,5 a 3,5 secondes entre les lots. Les lectures `chrome.storage` ont donc ete retirees de la boucle verrouillee. Les compteurs restent en memoire et sont sauvegardes sans attente au maximum une fois par seconde.
+
+### Synchronisation DOM 4.9.0
+
+Le journal suivant a montre jusqu'a 168 clics natifs par seconde pour seulement quelques touches validees : les anciennes coordonnees etaient recliquees avant le deplacement DOM, ce qui saturait la file d'evenements de Chrome. Une cible attend maintenant un changement reel de `data-cell` avant le clic suivant. Un clic perdu est retente apres 100 ms sans bloquer les autres cibles.
 
 ## Installation du compagnon Windows (curseur reel)
 
