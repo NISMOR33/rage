@@ -1,6 +1,10 @@
 # Vision Hold Clicker
 
-Version actuelle : **5.2.0**.
+Version actuelle : **5.3.0**.
+
+### Horloge haute resolution 5.3.0
+
+Le journal a montre que `Thread.Sleep(4)` durait environ 15,6 ms sur cette machine, portant un lot de quatre cibles a 55–70 ms. Le compagnon demande maintenant temporairement une resolution d'horloge Windows de 1 ms avec `timeBeginPeriod(1)`, puis la libere a sa fermeture. Un lot complet doit ainsi se rapprocher de 16–25 ms.
 
 ### Livraison cadencee 5.2.0
 

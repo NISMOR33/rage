@@ -22,6 +22,12 @@ internal static class Program
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int index);
 
+    [DllImport("winmm.dll")]
+    private static extern uint timeBeginPeriod(uint period);
+
+    [DllImport("winmm.dll")]
+    private static extern uint timeEndPeriod(uint period);
+
     private const uint InputMouse = 0;
     private const uint MouseMove = 0x0001;
     private const uint MouseLeftDown = 0x0002;
@@ -42,6 +48,7 @@ internal static class Program
 
     private static async Task Main()
     {
+        timeBeginPeriod(1);
         using Stream input = Console.OpenStandardInput();
         using Stream output = Console.OpenStandardOutput();
         while (true)
@@ -81,6 +88,7 @@ internal static class Program
             await WriteMessage(output, response);
         }
         LogWriter?.Dispose();
+        timeEndPeriod(1);
     }
 
     private static void ExecuteBatch(List<ClickPoint> points)
