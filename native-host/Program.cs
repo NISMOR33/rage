@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -21,6 +22,13 @@ internal static class Program
     private const uint InputMouse = 0;
     private const uint MouseLeftDown = 0x0002;
     private const uint MouseLeftUp = 0x0004;
+    private static readonly Stopwatch LogClock = Stopwatch.StartNew();
+    private static StreamWriter? LogWriter;
+    private static long LastRequestAt;
+    private static long LastLogAt;
+    private static int LoggedBatches;
+    private static int LoggedClicks;
+    private static long MaxGapMs;
 
     private static async Task Main()
     {
@@ -44,36 +52,88 @@ internal static class Program
                 if (request is null)
                     throw new InvalidOperationException("Commande inconnue.");
                 requestId = request.Id;
-                if (request.Type != "click")
-                    throw new InvalidOperationException("Commande inconnue.");
-                bool positioned = false;
-                for (int attempt = 0; attempt < 3; attempt++)
+                List<ClickPoint> points = request.Type switch
                 {
-                    if (!SetCursorPos(request.X, request.Y)) continue;
-                    if (GetCursorPos(out POINT point) && point.X == request.X && point.Y == request.Y)
-                    {
-                        positioned = true;
-                        break;
-                    }
-                }
-                if (!positioned)
-                    throw new InvalidOperationException("Le curseur Windows n'a pas atteint la cible.");
-
-                var events = new[]
-                {
-                    new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftDown } } },
-                    new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftUp } } }
+                    "click" => [new ClickPoint(request.X, request.Y)],
+                    "batch" when request.Points is { Count: > 0 } => request.Points,
+                    _ => throw new InvalidOperationException("Commande inconnue.")
                 };
-                if (SendInput((uint)events.Length, events, Marshal.SizeOf<INPUT>()) != events.Length)
-                    throw new InvalidOperationException("SendInput a echoue.");
+                var operationClock = Stopwatch.StartNew();
+                foreach (ClickPoint clickPoint in points)
+                    ExecuteClick(clickPoint.X, clickPoint.Y);
+                RecordBatch(points.Count, operationClock.Elapsed.TotalMilliseconds);
                 response = new Response(request.Id, true, null);
             }
             catch (Exception error)
             {
+                RecordError(error.Message);
                 response = new Response(requestId, false, error.Message);
             }
             await WriteMessage(output, response);
         }
+        LogWriter?.Dispose();
+    }
+
+    private static void ExecuteClick(int x, int y)
+    {
+        bool positioned = false;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            if (!SetCursorPos(x, y)) continue;
+            if (GetCursorPos(out POINT point) && point.X == x && point.Y == y)
+            {
+                positioned = true;
+                break;
+            }
+        }
+        if (!positioned)
+            throw new InvalidOperationException($"Curseur hors cible ({x}, {y}).");
+
+        var events = new[]
+        {
+            new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftDown } } },
+            new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftUp } } }
+        };
+        if (SendInput((uint)events.Length, events, Marshal.SizeOf<INPUT>()) != events.Length)
+            throw new InvalidOperationException("SendInput a echoue.");
+    }
+
+    private static void RecordBatch(int clicks, double durationMs)
+    {
+        try
+        {
+            long now = LogClock.ElapsedMilliseconds;
+            if (LastRequestAt > 0) MaxGapMs = Math.Max(MaxGapMs, now - LastRequestAt);
+            LastRequestAt = now;
+            LoggedBatches++;
+            LoggedClicks += clicks;
+            if (now - LastLogAt < 1000) return;
+            LogWriter ??= CreateLogWriter();
+            LogWriter.WriteLine($"{DateTimeOffset.Now:O} batches={LoggedBatches} clicks={LoggedClicks} maxGapMs={MaxGapMs} lastBatchMs={durationMs:F2}");
+            LogWriter.Flush();
+            LoggedBatches = LoggedClicks = 0;
+            MaxGapMs = 0;
+            LastLogAt = now;
+        }
+        catch { }
+    }
+
+    private static StreamWriter CreateLogWriter()
+    {
+        string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VisionHoldClicker");
+        Directory.CreateDirectory(directory);
+        return new StreamWriter(Path.Combine(directory, "bot.log"), append: true, Encoding.UTF8);
+    }
+
+    private static void RecordError(string message)
+    {
+        try
+        {
+            LogWriter ??= CreateLogWriter();
+            LogWriter.WriteLine($"{DateTimeOffset.Now:O} ERROR {message}");
+            LogWriter.Flush();
+        }
+        catch { }
     }
 
     private static async Task<bool> ReadExact(Stream stream, byte[] buffer)
@@ -99,7 +159,8 @@ internal static class Program
         await stream.FlushAsync();
     }
 
-    private sealed record Request(long Id, string Type, int X, int Y);
+    private sealed record Request(long Id, string Type, int X, int Y, List<ClickPoint>? Points);
+    private sealed record ClickPoint(int X, int Y);
     private sealed record Response(long Id, bool Ok, string? Error);
 
     [StructLayout(LayoutKind.Sequential)]

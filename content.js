@@ -185,8 +185,8 @@ function scanGridshotTargets() {
     }
 
     gridshotBusy = true;
-    let batchHits = 0;
     try {
+      const batch = [];
       for (const target of document.querySelectorAll('[data-gridshot-target]')) {
         if (!isHeld()) break;
         if (target.hidden || target.disabled) {
@@ -205,9 +205,10 @@ function scanGridshotTargets() {
 
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        if (await dispatchGridshotClick(target, x, y)) batchHits++;
+        batch.push({ target, x, y });
       }
 
+      const batchHits = await dispatchGridshotBatch(batch);
       if (batchHits) {
         const stats = await chrome.storage.local.get(["detections", "clicks"]);
         void chrome.storage.local.set({
@@ -223,35 +224,47 @@ function scanGridshotTargets() {
   });
 }
 
-async function dispatchGridshotClick(target, x, y) {
+async function dispatchGridshotBatch(batch) {
+  if (!batch.length) return 0;
   const onAimScientist = location.hostname === "aimscientist.com" || location.hostname.endsWith(".aimscientist.com");
   if (!onAimScientist) {
-    dispatchClick(target, x, y);
-    return true;
+    for (const { target, x, y } of batch) dispatchClick(target, x, y);
+    return batch.length;
   }
 
   const fpsMode = document.querySelector('[data-fps-mode]')?.value;
   if (fpsMode === "fps" || document.pointerLockElement) {
-    gridshotPositions.delete(target);
+    for (const { target } of batch) gridshotPositions.delete(target);
     await chrome.storage.local.set({
       status: "PASSAGE EN CLASSIQUE",
       error: "Mode FPS encore actif : conversion automatique en cours."
     });
-    return false;
+    return 0;
   }
 
   try {
-    const response = await sendNativeScreenClick(x, y);
+    const response = await sendNativeScreenBatch(batch.map(({ x, y }) => ({ x, y })));
     if (!response?.ok) throw new Error(response?.error || "Clic natif refuse");
-    // Le prochain cycle relit toujours la cible. Aucune attente de confirmation :
-    // si le DOM n'a pas encore bouge, le clic est simplement retente a l'image suivante.
-    gridshotPositions.delete(target);
-    return true;
+    for (const { target } of batch) gridshotPositions.delete(target);
+    return batch.length;
   } catch (error) {
-    gridshotPositions.delete(target);
+    for (const { target } of batch) gridshotPositions.delete(target);
     await chrome.storage.local.set({ status: "ERREUR GRIDSHOT", error: error.message });
-    return false;
+    return 0;
   }
+}
+
+function sendNativeScreenBatch(points) {
+  const chromeLeft = window.screenX + Math.max(0, (window.outerWidth - window.innerWidth) / 2);
+  const chromeTop = window.screenY + Math.max(0, window.outerHeight - window.innerHeight);
+  return chrome.runtime.sendMessage({
+    type: "native-click-batch",
+    points: points.map(({ x, y }) => ({
+      x, y,
+      screenX: chromeLeft + x,
+      screenY: chromeTop + y
+    }))
+  });
 }
 
 function sendNativeScreenClick(x, y) {

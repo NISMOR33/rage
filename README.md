@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.6.0**.
+Version actuelle : **4.7.0**.
 
 Deux robots sont inclus :
 
@@ -30,6 +30,10 @@ La boucle ne s'arrete plus apres le premier tapis. Les quatre cibles visibles so
 ### Mode Ultra 4.6.0
 
 Les attentes de confirmation et de recuperation ont ete supprimees du chemin critique. Une cible non deplacee est retentee a l'image suivante. Le compagnon verifie avec `GetCursorPos` que Windows a reellement place le curseur au point demande avant d'envoyer le clic.
+
+### Lots natifs et diagnostic 4.7.0
+
+Les quatre cibles Gridshot sont envoyees au compagnon Windows dans une seule commande au lieu de quatre allers-retours extension/programme. Le compagnon produit un journal agrege chaque seconde dans `%LOCALAPPDATA%\VisionHoldClicker\bot.log` avec le nombre de lots, le nombre de clics, la pause maximale et la duree du dernier lot. Les erreurs Windows sont egalement consignees.
 
 ## Installation du compagnon Windows (curseur reel)
 

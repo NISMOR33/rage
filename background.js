@@ -40,7 +40,7 @@ function getMouseHost() {
   return mouseHost;
 }
 
-function sendWindowsClick(x, y) {
+function sendWindowsCommand(command) {
   return new Promise((resolve, reject) => {
     const id = ++mouseRequestId;
     const timeout = setTimeout(() => {
@@ -52,12 +52,23 @@ function sendWindowsClick(x, y) {
       reject: error => { clearTimeout(timeout); reject(error); }
     });
     try {
-      getMouseHost().postMessage({ id, type: "click", x: Math.round(x), y: Math.round(y) });
+      getMouseHost().postMessage({ id, ...command });
     } catch (error) {
       mouseRequests.delete(id);
       clearTimeout(timeout);
       reject(error);
     }
+  });
+}
+
+function sendWindowsClick(x, y) {
+  return sendWindowsCommand({ type: "click", x: Math.round(x), y: Math.round(y) });
+}
+
+function sendWindowsBatch(points) {
+  return sendWindowsCommand({
+    type: "batch",
+    points: points.map(point => ({ x: Math.round(point.screenX), y: Math.round(point.screenY) }))
   });
 }
 
@@ -98,6 +109,19 @@ function enqueueNativeClick(tabId, x, y, screenX, screenY) {
   return next;
 }
 
+function enqueueNativeBatch(tabId, points) {
+  const previous = nativeClickQueues.get(tabId) || Promise.resolve();
+  const next = previous.catch(() => {}).then(async () => {
+    await enableScoreBlock(tabId);
+    await sendWindowsBatch(points);
+  });
+  nativeClickQueues.set(tabId, next);
+  next.finally(() => {
+    if (nativeClickQueues.get(tabId) === next) nativeClickQueues.delete(tabId);
+  });
+  return next;
+}
+
 async function stopNativeClicking(tabId) {
   nativeClickQueues.delete(tabId);
   await disableScoreBlock(tabId);
@@ -114,6 +138,13 @@ chrome.runtime.onInstalled.addListener(async details => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "native-click" && sender.tab?.id != null) {
     enqueueNativeClick(sender.tab.id, Number(message.x), Number(message.y), Number(message.screenX), Number(message.screenY)).then(
+      () => sendResponse({ ok: true }),
+      error => sendResponse({ ok: false, error: error.message })
+    );
+    return true;
+  }
+  if (message.type === "native-click-batch" && sender.tab?.id != null) {
+    enqueueNativeBatch(sender.tab.id, Array.isArray(message.points) ? message.points : []).then(
       () => sendResponse({ ok: true }),
       error => sendResponse({ ok: false, error: error.message })
     );
