@@ -6,8 +6,18 @@ const DEFAULTS = {
   requestedDelay: null, measuredDelay: null, browserOverhead: null
 };
 
-const debuggerTabs = new Set();
 const nativeClickQueues = new Map();
+const scoreBlockTabs = new Set();
+const SCORE_BLOCK_RULE_ID = 42001;
+
+chrome.runtime.onStartup.addListener(() => {
+  scoreBlockTabs.clear();
+  void chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [SCORE_BLOCK_RULE_ID] });
+});
+
+chrome.tabs.onRemoved.addListener(tabId => {
+  if (scoreBlockTabs.has(tabId)) void disableScoreBlock(tabId);
+});
 let mouseHost = null;
 let mouseRequestId = 0;
 const mouseRequests = new Map();
@@ -51,29 +61,32 @@ function sendWindowsClick(x, y) {
   });
 }
 
-chrome.debugger.onDetach.addListener(source => {
-  if (source.tabId != null) debuggerTabs.delete(source.tabId);
-});
+async function enableScoreBlock(tabId) {
+  scoreBlockTabs.add(tabId);
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [SCORE_BLOCK_RULE_ID],
+    addRules: [{
+      id: SCORE_BLOCK_RULE_ID,
+      priority: 1,
+      action: { type: "block" },
+      condition: {
+        urlFilter: "||ragepad-classement.ayoubgor811487.chatgpt.site/api/ragepad",
+        resourceTypes: ["xmlhttprequest"]
+      }
+    }]
+  });
+}
 
-async function ensureDebugger(tabId) {
-  if (debuggerTabs.has(tabId)) return;
-  await chrome.debugger.attach({ tabId }, "1.3");
-  debuggerTabs.add(tabId);
-  try {
-    await chrome.debugger.sendCommand({ tabId }, "Network.enable");
-    await chrome.debugger.sendCommand({ tabId }, "Network.setBlockedURLs", {
-      urls: ["*ragepad-classement.ayoubgor811487.chatgpt.site/api/ragepad*"]
-    });
-  } catch (error) {
-    await detachDebugger(tabId);
-    throw error;
-  }
+async function disableScoreBlock(tabId) {
+  scoreBlockTabs.delete(tabId);
+  if (scoreBlockTabs.size) return;
+  await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [SCORE_BLOCK_RULE_ID] });
 }
 
 function enqueueNativeClick(tabId, x, y, screenX, screenY) {
   const previous = nativeClickQueues.get(tabId) || Promise.resolve();
   const next = previous.catch(() => {}).then(async () => {
-    await ensureDebugger(tabId);
+    await enableScoreBlock(tabId);
     await sendWindowsClick(screenX, screenY);
   });
   nativeClickQueues.set(tabId, next);
@@ -83,11 +96,9 @@ function enqueueNativeClick(tabId, x, y, screenX, screenY) {
   return next;
 }
 
-async function detachDebugger(tabId) {
+async function stopNativeClicking(tabId) {
   nativeClickQueues.delete(tabId);
-  if (!debuggerTabs.has(tabId)) return;
-  try { await chrome.debugger.detach({ tabId }); } catch {}
-  debuggerTabs.delete(tabId);
+  await disableScoreBlock(tabId);
 }
 
 chrome.runtime.onInstalled.addListener(async details => {
@@ -107,7 +118,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message.type === "native-click-stop" && sender.tab?.id != null) {
-    detachDebugger(sender.tab.id).then(() => sendResponse({ ok: true }));
+    stopNativeClicking(sender.tab.id).then(() => sendResponse({ ok: true }));
     return true;
   }
   if ((message.type === "hold-start" || message.type === "hold-stop") && message.tabId != null) {

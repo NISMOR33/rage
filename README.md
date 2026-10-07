@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.1.0**.
+Version actuelle : **4.2.0**.
 
 Deux robots sont inclus :
 
@@ -10,6 +10,10 @@ Deux robots sont inclus :
 ### Correction 4.1.0
 
 La version 4.0 pouvait rester sur `TOUCHE MAINTENUE` avec zero detection : le compagnon C# lisait les proprietes JSON avec une casse differente de JavaScript, puis repondait avec l'identifiant `0`. La 4.1 accepte les noms JSON sans tenir compte de la casse, conserve l'identifiant de chaque demande et affiche une erreur apres deux secondes au lieu de rester bloquee.
+
+### Correction 4.2.0
+
+La permission `chrome.debugger` a ete entierement supprimee. Le bandeau « Vision Hold Clicker a demarre le debogage » ne doit plus apparaitre. La publication des scores de test est bloquee temporairement avec `declarativeNetRequest`, puis la regle est retiree a l'arret du robot.
 
 ## Installation du compagnon Windows (curseur reel)
 
@@ -61,7 +65,7 @@ Sur Aim Scientist, la version 3.3 force automatiquement le curseur classique, de
 
 - Cette version surveille le DOM de la page, pas les pixels du bureau Windows.
 - Les pages internes (`chrome://...`), le Chrome Web Store et certains PDF protégés n'acceptent pas les scripts d'extension.
-- Le clic est un événement DOM synthétique. Il fonctionne sur la plupart des pages, mais `event.isTrusted` reste `false`; les sites qui exigent un clic matériel peuvent le refuser. Un clic système réellement natif demanderait une application Windows compagnon (ou l'API `chrome.debugger`, intrusive).
+- Sur Aim Scientist, les clics sont effectues par le compagnon Windows natif. Sur les autres pages, le mode generique conserve des evenements DOM synthetiques, que certains sites peuvent refuser.
 - La touche est suivie lorsque le focus se trouve dans la page. Chrome ne transmet pas les frappes quand la barre d'adresse, la popup ou une autre application a le focus.
 - Les changements dessinés uniquement dans un `<canvas>` ou une vidéo ne modifient pas nécessairement le DOM et peuvent ne pas être détectés.
 
