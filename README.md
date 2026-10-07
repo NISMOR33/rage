@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.2.0**.
+Version actuelle : **4.3.0**.
 
 Deux robots sont inclus :
 
@@ -14,6 +14,10 @@ La version 4.0 pouvait rester sur `TOUCHE MAINTENUE` avec zero detection : le co
 ### Correction 4.2.0
 
 La permission `chrome.debugger` a ete entierement supprimee. Le bandeau « Vision Hold Clicker a demarre le debogage » ne doit plus apparaitre. La publication des scores de test est bloquee temporairement avec `declarativeNetRequest`, puis la regle est retiree a l'arret du robot.
+
+### Correction 4.3.0
+
+Les requetes `GET` du classement restent autorisees pendant le test : le panneau ne doit plus afficher « Connexion indisponible ». Seules les requetes `POST` susceptibles de publier un score automatise sont bloquees.
 
 ## Installation du compagnon Windows (curseur reel)
 

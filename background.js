@@ -71,7 +71,8 @@ async function enableScoreBlock(tabId) {
       action: { type: "block" },
       condition: {
         urlFilter: "||ragepad-classement.ayoubgor811487.chatgpt.site/api/ragepad",
-        resourceTypes: ["xmlhttprequest"]
+        resourceTypes: ["xmlhttprequest"],
+        requestMethods: ["post"]
       }
     }]
   });
