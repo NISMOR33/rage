@@ -19,9 +19,19 @@ internal static class Program
     [DllImport("user32.dll")]
     private static extern uint SendInput(uint count, INPUT[] inputs, int size);
 
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int index);
+
     private const uint InputMouse = 0;
+    private const uint MouseMove = 0x0001;
     private const uint MouseLeftDown = 0x0002;
     private const uint MouseLeftUp = 0x0004;
+    private const uint MouseVirtualDesk = 0x4000;
+    private const uint MouseAbsolute = 0x8000;
+    private const int SmXVirtualScreen = 76;
+    private const int SmYVirtualScreen = 77;
+    private const int SmCxVirtualScreen = 78;
+    private const int SmCyVirtualScreen = 79;
     private static readonly Stopwatch LogClock = Stopwatch.StartNew();
     private static StreamWriter? LogWriter;
     private static long LastRequestAt;
@@ -59,8 +69,7 @@ internal static class Program
                     _ => throw new InvalidOperationException("Commande inconnue.")
                 };
                 var operationClock = Stopwatch.StartNew();
-                foreach (ClickPoint clickPoint in points)
-                    ExecuteClick(clickPoint.X, clickPoint.Y);
+                ExecuteBatch(points);
                 RecordBatch(points.Count, operationClock.Elapsed.TotalMilliseconds);
                 response = new Response(request.Id, true, null);
             }
@@ -74,27 +83,23 @@ internal static class Program
         LogWriter?.Dispose();
     }
 
-    private static void ExecuteClick(int x, int y)
+    private static void ExecuteBatch(List<ClickPoint> points)
     {
-        bool positioned = false;
-        for (int attempt = 0; attempt < 3; attempt++)
+        int left = GetSystemMetrics(SmXVirtualScreen);
+        int top = GetSystemMetrics(SmYVirtualScreen);
+        int width = Math.Max(2, GetSystemMetrics(SmCxVirtualScreen));
+        int height = Math.Max(2, GetSystemMetrics(SmCyVirtualScreen));
+        var events = new List<INPUT>(points.Count * 3);
+        foreach (ClickPoint point in points)
         {
-            if (!SetCursorPos(x, y)) continue;
-            if (GetCursorPos(out POINT point) && point.X == x && point.Y == y)
-            {
-                positioned = true;
-                break;
-            }
+            int absoluteX = (int)Math.Round((point.X - left) * 65535.0 / (width - 1));
+            int absoluteY = (int)Math.Round((point.Y - top) * 65535.0 / (height - 1));
+            events.Add(new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { dx = absoluteX, dy = absoluteY, flags = MouseMove | MouseAbsolute | MouseVirtualDesk } } });
+            events.Add(new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftDown } } });
+            events.Add(new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftUp } } });
         }
-        if (!positioned)
-            throw new InvalidOperationException($"Curseur hors cible ({x}, {y}).");
-
-        var events = new[]
-        {
-            new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftDown } } },
-            new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftUp } } }
-        };
-        if (SendInput((uint)events.Length, events, Marshal.SizeOf<INPUT>()) != events.Length)
+        INPUT[] inputArray = events.ToArray();
+        if (SendInput((uint)inputArray.Length, inputArray, Marshal.SizeOf<INPUT>()) != inputArray.Length)
             throw new InvalidOperationException("SendInput a echoue.");
     }
 

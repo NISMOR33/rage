@@ -1,6 +1,10 @@
 # Vision Hold Clicker
 
-Version actuelle : **5.0.0**.
+Version actuelle : **5.1.0**.
+
+### Entrees Windows ordonnees 5.1.0
+
+Les deplacements `SetCursorPos` successifs pouvaient etre fusionnes par Windows avant le traitement des clics par Chrome. Chaque lot est maintenant une seule sequence `SendInput` atomique contenant, pour chaque cible, un deplacement absolu sur le bureau virtuel suivi de bouton bas et bouton haut. Les quatre positions restent ainsi ordonnees dans la file d'entree Windows.
 
 ## Mode d'envoi des scores
 
