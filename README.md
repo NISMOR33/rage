@@ -1,6 +1,10 @@
 # Vision Hold Clicker
 
-Version actuelle : **5.3.0**.
+Version actuelle : **5.4.0**.
+
+### Un clic par image 5.4.0
+
+Les lots de quatre mouvements etaient encore trop rapides pour le DOM : plusieurs clics etaient livres avant que les cellules soient mises a jour, puis la boucle attendait inutilement. Le bot envoie maintenant un seul clic fiable par cycle d'affichage et fait tourner la priorite entre les quatre tapis. A 60 Hz, cette architecture conserve une marge importante au-dessus des 13–17 touches/s visees.
 
 ### Horloge haute resolution 5.3.0
 

@@ -22,6 +22,7 @@ let gridshotStartClicked = false;
 let gridshotTotalDetections = 0;
 let gridshotTotalClicks = 0;
 let gridshotLastStatsWrite = 0;
+let gridshotNextTargetIndex = 0;
 
 chrome.storage.local.get(["activationCode", "activationMode", "secondClickEnabled", "secondClickPoint"]).then(data => {
   activationCode = data.activationCode || "KeyF";
@@ -121,6 +122,7 @@ function stopMonitoring() {
   gridshotBusy = false;
   gridshotModeSwitching = false;
   gridshotStartClicked = false;
+  gridshotNextTargetIndex = 0;
   reactionWasVisible = false;
   clickPending = false;
   if (location.hostname === "aimscientist.com" || location.hostname.endsWith(".aimscientist.com")) {
@@ -196,7 +198,10 @@ function scanGridshotTargets() {
     gridshotBusy = true;
     try {
       const batch = [];
-      for (const target of document.querySelectorAll('[data-gridshot-target]')) {
+      const targets = [...document.querySelectorAll('[data-gridshot-target]')];
+      for (let offset = 0; offset < targets.length; offset++) {
+        const index = (gridshotNextTargetIndex + offset) % targets.length;
+        const target = targets[index];
         if (!isHeld()) break;
         if (target.hidden || target.disabled) {
           gridshotPositions.delete(target);
@@ -220,6 +225,8 @@ function scanGridshotTargets() {
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
         batch.push({ target, x, y });
+        gridshotNextTargetIndex = (index + 1) % targets.length;
+        break;
       }
 
       const batchHits = await dispatchGridshotBatch(batch);
