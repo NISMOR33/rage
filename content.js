@@ -205,7 +205,7 @@ function scanGridshotTargets() {
 
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        if (await dispatchGridshotClick(target, x, y, position)) batchHits++;
+        if (await dispatchGridshotClick(target, x, y)) batchHits++;
       }
 
       if (batchHits) {
@@ -223,7 +223,7 @@ function scanGridshotTargets() {
   });
 }
 
-async function dispatchGridshotClick(target, x, y, previousPosition) {
+async function dispatchGridshotClick(target, x, y) {
   const onAimScientist = location.hostname === "aimscientist.com" || location.hostname.endsWith(".aimscientist.com");
   if (!onAimScientist) {
     dispatchClick(target, x, y);
@@ -243,26 +243,13 @@ async function dispatchGridshotClick(target, x, y, previousPosition) {
   try {
     const response = await sendNativeScreenClick(x, y);
     if (!response?.ok) throw new Error(response?.error || "Clic natif refuse");
-    let currentPosition = previousPosition;
-    const confirmationDeadline = performance.now() + 30;
-    while (currentPosition === previousPosition && performance.now() < confirmationDeadline) {
-      await sleep(1);
-      currentPosition = `${target.dataset.cell || ""}:${target.style.left}:${target.style.top}`;
-    }
-    if (currentPosition === previousPosition) {
-      gridshotPositions.delete(target);
-      await chrome.storage.local.set({
-        status: "CLIC NON VALIDE",
-        error: `Clic natif envoye en ${Math.round(x)}, ${Math.round(y)}, mais la cible n'a pas change.`
-      });
-      await sleep(80);
-      return false;
-    }
+    // Le prochain cycle relit toujours la cible. Aucune attente de confirmation :
+    // si le DOM n'a pas encore bouge, le clic est simplement retente a l'image suivante.
+    gridshotPositions.delete(target);
     return true;
   } catch (error) {
     gridshotPositions.delete(target);
     await chrome.storage.local.set({ status: "ERREUR GRIDSHOT", error: error.message });
-    await sleep(100);
     return false;
   }
 }

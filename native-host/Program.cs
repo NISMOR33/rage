@@ -13,6 +13,9 @@ internal static class Program
     private static extern bool SetCursorPos(int x, int y);
 
     [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT point);
+
+    [DllImport("user32.dll")]
     private static extern uint SendInput(uint count, INPUT[] inputs, int size);
 
     private const uint InputMouse = 0;
@@ -43,8 +46,18 @@ internal static class Program
                 requestId = request.Id;
                 if (request.Type != "click")
                     throw new InvalidOperationException("Commande inconnue.");
-                if (!SetCursorPos(request.X, request.Y))
-                    throw new InvalidOperationException("SetCursorPos a echoue.");
+                bool positioned = false;
+                for (int attempt = 0; attempt < 3; attempt++)
+                {
+                    if (!SetCursorPos(request.X, request.Y)) continue;
+                    if (GetCursorPos(out POINT point) && point.X == request.X && point.Y == request.Y)
+                    {
+                        positioned = true;
+                        break;
+                    }
+                }
+                if (!positioned)
+                    throw new InvalidOperationException("Le curseur Windows n'a pas atteint la cible.");
 
                 var events = new[]
                 {
@@ -88,6 +101,9 @@ internal static class Program
 
     private sealed record Request(long Id, string Type, int X, int Y);
     private sealed record Response(long Id, bool Ok, string? Error);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X; public int Y; }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct INPUT { public uint type; public InputUnion data; }

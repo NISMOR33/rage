@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.5.0**.
+Version actuelle : **4.6.0**.
 
 Deux robots sont inclus :
 
@@ -26,6 +26,10 @@ La regle de protection reseau est maintenant installee une seule fois par sessio
 ### Mode Turbo 4.5.0
 
 La boucle ne s'arrete plus apres le premier tapis. Les quatre cibles visibles sont traitees sequentiellement dans chaque lot, puis toutes les cibles deplacees sont reprises au cycle suivant. Les statistiques de l'extension ne sont ecrites qu'une fois par lot afin de ne pas ralentir les clics.
+
+### Mode Ultra 4.6.0
+
+Les attentes de confirmation et de recuperation ont ete supprimees du chemin critique. Une cible non deplacee est retentee a l'image suivante. Le compagnon verifie avec `GetCursorPos` que Windows a reellement place le curseur au point demande avant d'envoyer le clic.
 
 ## Installation du compagnon Windows (curseur reel)
 
