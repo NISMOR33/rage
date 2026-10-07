@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.7.0**.
+Version actuelle : **4.8.0**.
 
 Deux robots sont inclus :
 
@@ -34,6 +34,10 @@ Les attentes de confirmation et de recuperation ont ete supprimees du chemin cri
 ### Lots natifs et diagnostic 4.7.0
 
 Les quatre cibles Gridshot sont envoyees au compagnon Windows dans une seule commande au lieu de quatre allers-retours extension/programme. Le compagnon produit un journal agrege chaque seconde dans `%LOCALAPPDATA%\VisionHoldClicker\bot.log` avec le nombre de lots, le nombre de clics, la pause maximale et la duree du dernier lot. Les erreurs Windows sont egalement consignees.
+
+### Boucle sans stockage 4.8.0
+
+Le journal 4.7 a montre des lots Windows de 3 a 11 ms mais des interruptions de 0,5 a 3,5 secondes entre les lots. Les lectures `chrome.storage` ont donc ete retirees de la boucle verrouillee. Les compteurs restent en memoire et sont sauvegardes sans attente au maximum une fois par seconde.
 
 ## Installation du compagnon Windows (curseur reel)
 

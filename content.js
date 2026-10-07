@@ -18,6 +18,9 @@ let gridshotBusy = false;
 let gridshotModeSwitching = false;
 const gridshotPositions = new WeakMap();
 let gridshotStartClicked = false;
+let gridshotTotalDetections = 0;
+let gridshotTotalClicks = 0;
+let gridshotLastStatsWrite = 0;
 
 chrome.storage.local.get(["activationCode", "activationMode", "secondClickEnabled", "secondClickPoint"]).then(data => {
   activationCode = data.activationCode || "KeyF";
@@ -98,6 +101,10 @@ async function startMonitoring() {
   });
   startReactionWatcher();
   startGridshotWatcher();
+  void chrome.storage.local.get(["detections", "clicks"]).then(stats => {
+    gridshotTotalDetections = Number(stats.detections) || 0;
+    gridshotTotalClicks = Number(stats.clicks) || 0;
+  });
   await chrome.storage.local.set({ status: "TOUCHE MAINTENUE", error: "" });
 }
 
@@ -118,6 +125,7 @@ function stopMonitoring() {
   if (location.hostname === "aimscientist.com" || location.hostname.endsWith(".aimscientist.com")) {
     void chrome.runtime.sendMessage({ type: "native-click-stop" }).catch(() => {});
   }
+  void flushGridshotStats(true);
   void chrome.storage.local.set({ status: "INACTIF" });
 }
 
@@ -210,17 +218,25 @@ function scanGridshotTargets() {
 
       const batchHits = await dispatchGridshotBatch(batch);
       if (batchHits) {
-        const stats = await chrome.storage.local.get(["detections", "clicks"]);
-        void chrome.storage.local.set({
-          status: `GRIDSHOT TURBO x${batchHits}`,
-          detections: (stats.detections || 0) + batchHits,
-          clicks: (stats.clicks || 0) + batchHits,
-          error: ""
-        });
+        gridshotTotalDetections += batchHits;
+        gridshotTotalClicks += batchHits;
+        void flushGridshotStats(false, batchHits);
       }
     } finally {
       gridshotBusy = false;
     }
+  });
+}
+
+async function flushGridshotStats(force = false, batchHits = 0) {
+  const now = performance.now();
+  if (!force && now - gridshotLastStatsWrite < 1000) return;
+  gridshotLastStatsWrite = now;
+  await chrome.storage.local.set({
+    status: batchHits ? `GRIDSHOT TURBO x${batchHits}` : (isHeld() ? "GRIDSHOT TURBO" : "INACTIF"),
+    detections: gridshotTotalDetections,
+    clicks: gridshotTotalClicks,
+    error: ""
   });
 }
 
