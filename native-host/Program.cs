@@ -89,18 +89,22 @@ internal static class Program
         int top = GetSystemMetrics(SmYVirtualScreen);
         int width = Math.Max(2, GetSystemMetrics(SmCxVirtualScreen));
         int height = Math.Max(2, GetSystemMetrics(SmCyVirtualScreen));
-        var events = new List<INPUT>(points.Count * 3);
         foreach (ClickPoint point in points)
         {
             int absoluteX = (int)Math.Round((point.X - left) * 65535.0 / (width - 1));
             int absoluteY = (int)Math.Round((point.Y - top) * 65535.0 / (height - 1));
-            events.Add(new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { dx = absoluteX, dy = absoluteY, flags = MouseMove | MouseAbsolute | MouseVirtualDesk } } });
-            events.Add(new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftDown } } });
-            events.Add(new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftUp } } });
+            INPUT[] clickEvents =
+            [
+                new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { dx = absoluteX, dy = absoluteY, flags = MouseMove | MouseAbsolute | MouseVirtualDesk } } },
+                new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftDown } } },
+                new INPUT { type = InputMouse, data = new InputUnion { mouse = new MOUSEINPUT { flags = MouseLeftUp } } }
+            ];
+            if (SendInput((uint)clickEvents.Length, clickEvents, Marshal.SizeOf<INPUT>()) != clickEvents.Length)
+                throw new InvalidOperationException("SendInput a echoue.");
+            // Laisser Windows livrer le clic a Chrome avant le prochain
+            // deplacement, sinon les mouvements peuvent etre fusionnes.
+            Thread.Sleep(4);
         }
-        INPUT[] inputArray = events.ToArray();
-        if (SendInput((uint)inputArray.Length, inputArray, Marshal.SizeOf<INPUT>()) != inputArray.Length)
-            throw new InvalidOperationException("SendInput a echoue.");
     }
 
     private static void RecordBatch(int clicks, double durationMs)

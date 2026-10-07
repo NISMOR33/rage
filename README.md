@@ -1,6 +1,10 @@
 # Vision Hold Clicker
 
-Version actuelle : **5.1.0**.
+Version actuelle : **5.2.0**.
+
+### Livraison cadencee 5.2.0
+
+Le lot atomique 5.1 restait trop compact pour Chrome, qui ne validait qu'une partie des clics. Chaque cible conserve maintenant son deplacement absolu et son clic, mais les triplets sont livres separement avec 4 ms entre eux. Cette pause est assez courte pour depasser largement 17 touches/s, tout en laissant Chrome traiter la cible avant le mouvement suivant.
 
 ### Entrees Windows ordonnees 5.1.0
 
