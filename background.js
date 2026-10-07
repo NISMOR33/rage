@@ -62,6 +62,7 @@ function sendWindowsClick(x, y) {
 }
 
 async function enableScoreBlock(tabId) {
+  if (scoreBlockTabs.has(tabId)) return;
   scoreBlockTabs.add(tabId);
   await chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [SCORE_BLOCK_RULE_ID],

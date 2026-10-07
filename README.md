@@ -1,6 +1,6 @@
 # Vision Hold Clicker
 
-Version actuelle : **4.3.0**.
+Version actuelle : **4.4.0**.
 
 Deux robots sont inclus :
 
@@ -18,6 +18,10 @@ La permission `chrome.debugger` a ete entierement supprimee. Le bandeau « Visio
 ### Correction 4.3.0
 
 Les requetes `GET` du classement restent autorisees pendant le test : le panneau ne doit plus afficher « Connexion indisponible ». Seules les requetes `POST` susceptibles de publier un score automatise sont bloquees.
+
+### Optimisation 4.4.0
+
+La regle de protection reseau est maintenant installee une seule fois par session au lieu d'etre recalculee avant chaque clic. L'attente fixe apres `SendInput` est remplacee par une confirmation rapide du changement de cellule, avec un delai maximal de 30 ms.
 
 ## Installation du compagnon Windows (curseur reel)
 

@@ -240,8 +240,12 @@ async function dispatchGridshotClick(target, x, y, previousPosition) {
   try {
     const response = await sendNativeScreenClick(x, y);
     if (!response?.ok) throw new Error(response?.error || "Clic natif refuse");
-    await sleep(12);
-    const currentPosition = `${target.dataset.cell || ""}:${target.style.left}:${target.style.top}`;
+    let currentPosition = previousPosition;
+    const confirmationDeadline = performance.now() + 30;
+    while (currentPosition === previousPosition && performance.now() < confirmationDeadline) {
+      await sleep(1);
+      currentPosition = `${target.dataset.cell || ""}:${target.style.left}:${target.style.top}`;
+    }
     if (currentPosition === previousPosition) {
       gridshotPositions.delete(target);
       await chrome.storage.local.set({
